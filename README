@@ -1,0 +1,14 @@
+Name: Karthik Iyer
+NET ID: kai49
+
+Partner Name: Neerej Selvakumar
+NET ID: ns1137
+
+There were many parts to this project and we worked through it in steps. We first decided to make directory
+and file queues work with one thread and once we did that, only then we implemented the threads. We made sure
+all combinations of files and directories worked when obtaining the final repository list. We test empty directories, 
+directories with many subdirectories within, and if the arguments given were only files. After all this worked we
+proceeded to the analysis phase where again we tested a bunch of different types of files. Files that were empty
+had to have a JSD of 0, whereas if one file was empty and another was not, their JSD was approximately 0.7070. When
+we were sure that all these types of file combinations worked when calcating the JSD, as well as other files that both 
+had content worked, we were sure that our code was correct.
