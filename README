@@ -1,14 +1,192 @@
-Name: Karthik Iyer
-NET ID: kai49
+1 SUMMARY
 
-Partner Name: Neerej Selvakumar
-NET ID: ns1137
+Write a program that analyzes a set of files and reports their similarity using the method described
+below. Your program will use two or more threads to read directory entries and analyze the word
+frequencies of text files, then compute the Jensen-Shannon distance between the word frequencies of
+pairs of files.
 
-There were many parts to this project and we worked through it in steps. We first decided to make directory
-and file queues work with one thread and once we did that, only then we implemented the threads. We made sure
-all combinations of files and directories worked when obtaining the final repository list. We test empty directories, 
-directories with many subdirectories within, and if the arguments given were only files. After all this worked we
-proceeded to the analysis phase where again we tested a bunch of different types of files. Files that were empty
-had to have a JSD of 0, whereas if one file was empty and another was not, their JSD was approximately 0.7070. When
-we were sure that all these types of file combinations worked when calcating the JSD, as well as other files that both 
-had content worked, we were sure that our code was correct.
+2 USER INTERFACE
+
+Your program will be given the names of one or more files and directories, and up to four optional
+arguments specifying program parameters. The file names and directories are used to determine
+the set of files to analyze. File names given as arguments are added directly to the set of files. For
+each directory, your program will add any files whose names have a particular suffix to the set, and
+recursively traverse any subdirectories.
+For each (unordered) pair of files in the analysis set, your program will output the Jensen-Shannon
+distance between their word frequencies.
+
+For example:
+$ ls bar
+baz.txt quux spam/
+$ ls bar/spam
+eggs.txt bacon.c
+$ ./compare foo bar
+0.03000 foo bar/baz.txt
+0.12000 foo bar/spam/eggs.txt
+0.80000 bar/baz.txt bar/spam/eggs.txt
+
+In this example, the arguments are foo (a file) and bar (a directory). One file in bar matches
+the default suffix (".txt") and is added to the file set. The subdirectory bar/spam is also traversed,
+and its files that end with the suffix are added. This results in the file set foo, bar/baz.txt, and
+bar/spam/eggs.txt. (Note that foo does not need to end with the suffix, because it was explicitly
+given by the user.)
+For each pair of files in the file set, the program outputs the JSD and the (path) names of the
+files being compared. Comparisons are printed in decreasing order of combined word count (that is,
+the total number of words in both files). Note that pairs are unordered, so the output will include
+comparisons of foo and bar/baz.txt or bar/baz.txt and foo, but not both.
+
+2.1 REGULAR ARGUMENTS
+Your program will take one or more regular arguments, which must be the name (or a path to) a
+file or directory.
+Each file name is added to the set of files to examine.
+Each directory name is added to the set of directories to traverse. For each directory in the set,
+your program will read through its entries. Any file whose name ends with the file name suffix is
+added to the set of files to examine. Any directory is added to the set of directories to traverse.
+Entries that are not directories and that do not end with the specified suffix are ignored.
+Exception -- Any entry in a directory whose name begins with a period is ignored.
+
+2.2 OPTIONAL ARGUMENTS
+Your program takes up to four optional arguments, which are used to set program parameters. For
+simplicity, we will assume any argument that begins with a dash (-) specifies an option. The first
+character following the dash indicates which parameter is being specified, and the remainder of the
+argument gives the value for that parameter. Table 1 gives the syntax for the four options, and the
+default values for the parameters of the options are omitted.
+For simplicity, you may require all optional arguments to occur before the regular arguments
+in the argument list, or allow them to be intermixed. You may require that an optional argument
+occur at most once, or allow later arguments to override earlier ones.
+You must allow options to be given in any order.
+Your program must detect any invalid optional arguments and halt with an error message.
+Possible errors are an invalid option (e.g., -x), or an invalid or missing argument (e.g., -f0 or -d).
+Note -- The file name suffix may be an empty string, which would be indicated by the option -s.
+
+3 OPERATION
+
+Your program will compute the word frequency distribution for each file in a set of files. For each
+pair of files in this set, it will compute the Jensen-Shannon distance (JSD) between the distributions
+for those files
+
+3.1 WORD FREQUENCY DISTRIBUTION (WFD)
+The frequency of a word is the number of times the word appears divided by the total number of
+words. For example, in the text “spam eggs bacon spam”, the frequency of “spam” is 0.5, and the
+frequencies of “eggs” and “bacon” are both 0.25.
+The word frequency distribution (WFD) for a file is a list of every word that occurs at least once
+in the file, along with its frequency. Ignoring rounding errors, the frequencies for all the words will
+add up to 1.
+
+Tokenizing -- To compute the WFD for a file, your program must read the file and determine what
+words it contains. For this project, we define a word to be a sequence of word characters, where word
+characters include letters, numbers, and the dash (hyphen). Words are separated by whitespace
+characters. Other characters, such as punctuation, are ignored.
+
+To compute the WFD, keep a list of every word found in the file and its count. Each time a
+word is encountered, look for it in the list and increment its count or add it with count 1. Once
+every word has been read, divide the count for each word by the total number of words.
+Words are case-insensitive. The simplest way to handle this is to convert words to upper- or
+lowercase while reading.
+Table 2 shows the WFD for a short example file. Note that “I” has been converted to lowercase
+and that “can’t” and “cant” are treated as the same word (because the apostrophe is ignored).
+
+Data structure -- You will need to maintain a list of mappings between words and counts (later
+frequencies). You are free to choose any data structure, but you may find a linked list to be a good
+balance of efficiency and simplicity. It is recommended that you choose a structure that allows you
+to iterate through the words in lexicographic order.
+
+Your program must not assume a maximum word length. Instead, word storage will be dynamically allocated.
+
+After this, all file and directory queues have been traversed and you have a completed WFD for each file, 
+calculate the JENSEN-SHANNEN distance (JSD) for each pair of files.
+The Jensen-Shannon distance (JSD) is a symmetric measure of the similarity of two discrete
+distributions. We will write Fi(x) to mean the frequency of word x in file i. Note that Fi(x) = 0 if
+x does not appear in file i. The JSD should show how similar two files are to one another.
+
+Implementation -- If you have chosen a WFD structure that allows you to iterate through the
+word lists in alphabetical order, it is simple to compute the JSD using simultaneous iteration for
+both lists. Keep a running total of the KLD for both files. If you encounter a word appearing in
+both lists, compute the mean frequency and then add the scaled frequencies to both running totals.
+If word appears in one list but not the other, treat its frequency as 0 in the file where it does not
+appear. Once all words have been considered, compute the JSD.
+
+
+4 PROGRAM ORGANIZATION
+
+Your program will operate in two phases. The collection phase recursively traverses directories and
+reads files to find the WFD (see section 3.1) for each requested file. The analysis phase computes
+the JSD (see section 3.2) for each pair of requested files.
+Both phases are multithreaded and use synchronized data structures to perform their tasks.
+
+4.1 COLLECTION PHASE
+The collection phase uses two groups of threads to find the WFD for each file in a set of requested
+files. It uses two synchronized queues to keep track of the directories and that need to be examined.
+Figure 2 shows the organization of the collection phase. The components of the collection phase
+are:
+Directory queue --  Contains a list of directories that have been seen but not yet traversed. This
+will be a synchronized queue (or stack) that must be unbounded.
+
+File queue -- Contains a list of files that have been seen, but not yet examined. This will be a
+synchronized queue (or stack) that may be bounded or unbounded.
+
+WFD repository --  Once a file has been examined, its name, count of tokens, and WFD is added to
+this structure. This may be any synchronized data structure. See section 3.1 for details of
+how to represent the WFD.
+
+Main thread -- The main thread creates the queues and repository. For each regular argument, it
+determines whether it is a file or directory and adds it to the appropriate queue. Based on
+the program parameters (see section 2.2), it starts the requested number of file and directory
+threads. Once all the file threads have completed, it proceeds to the analysis phase.
+
+Directory thread --  Each directory thread is a loop that repeatedly dequeues a directory name from
+the directory queue and reads through its directory listing. Each directory entry is added to
+the directory queue. Each non-directory entry that ends with the file name suffix is added to
+the file queue. A directory thread will finish when the queue is empty and all other directory threads have
+finished or are waiting to dequeue.
+
+File threads  -- Each file thread is a loop that repeatedly dequeues a file name from the file queue,
+tokenizes the file and computes its WFD, and adds the data for that file to the WFD repository.
+A file thread will finish once the queue is empty and all directory threads have finished.
+
+Note that the working directory is shared by all threads, so the directory threads will not be
+able to use chdir(). Instead, they will need to concatenate the directory name and the file or
+subdirectory name to get a path. Assume that all file and directory names given as arguments are
+relative to the working directory (that is, you do not need to modify or examine them).
+We will discuss synchronized queues in class, but you will need to customize them somewhat
+to work here. When the directory queue is empty, you will need to keep track of the number of
+threads waiting to dequeue. Once the last thread tries to dequeue, you can be certain that no new
+directories will be found. At this point, you can set a flag indicating that traversal has ended and
+wake up the directory threads so that they can terminate. Similarly, file threads should terminate if
+the file queue is empty and traversal has ended (meaning no more files will be added).
+
+
+Error conditions -- If any file or directory cannot be opened, report an error and continue processing.
+It is sufficient to call perror() with the name of the file or directory to report the error. You may
+also exit with status EXIT_FAILURE when the program completes.
+For unexpected errors, such as failure to create threads or lock and unlock mutexes, your program
+may report an error and terminate immediately.
+
+4.2 Analysis phase
+The analysis phase computes the JSD (see section 3.2) and combined word count for each pair of
+files listed in the WFD repository (see section 4.1). It divides this work among one or more analysis
+threads, as indicated by the analysis threads option (see section 2.2).
+Each analysis thread is given a portion of the file pairs and computes the JSD for each pair. Once
+all comparisons have been made, the main thread will sort the list of comparisons in descending
+order of combined word count and then print the results.
+
+Data structure -- For each comparison, we will need the names of the files being compared, the
+combined word count, and the JSD. If there are n files, there will be 1/2n(n - 1) comparisons, so it
+is feasible to create an array of structs, have each thread write to non-overlapping portions of the
+array, and finally sort the array using qsort().
+
+Division of labor -- The simplest way to divide the work among the analysis threads is to give
+each thread a roughly-equal portion of the comparison set to compute. If there are 30 files and 5
+analysis threads, then each thread will compute 93 of the 465 comparisons. (Naturally, we must be
+able ot handle cases where the number of comparisons does not divide evenly.)
+While this method divides up the number of tasks (roughly) equally, it assumes that all
+comparisons will take equally long to compute. Another method to divide the work is to keep
+track of which comparison needs to be computed next and have each analysis thread take the next
+comparison needed. This will reduce the possibility that some threads will finish early while other
+threads have significant amounts of work left to do.
+
+Error conditions --  If the collection phase found fewer than two files, report an error and exit.
+Any numeric errors occurring in this phase (e.g., word frequencies outside the range [0,1]) indicate
+problems in the collection phase. You may choose to check these using assert().
+
+
